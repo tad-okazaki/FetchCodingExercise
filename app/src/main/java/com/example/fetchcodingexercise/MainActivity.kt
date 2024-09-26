@@ -88,9 +88,10 @@ fun retrieveAmazonJsonData(link: String) : List<AmazonData>? {
 }
 
 fun sortList(rawData: List<AmazonData>?) : List<AmazonData>? {
-    //Sort by listId first, then sort by name.
+    //Remove all AmazonData that are null or blank
+    //Then sort by listId, then sort by name.
     //Name must have the prefix "Item " removed before int comparison
-    return rawData?.sortedWith(compareBy({ it.listId }, { removeItemPrefix(it.name) }))
+    return rawData?.filter { !it.name.isNullOrBlank() }?.sortedWith(compareBy({ it.listId }, { removeItemPrefix(it.name) }))
 }
 
 fun removeItemPrefix(name: String?) : Int {
