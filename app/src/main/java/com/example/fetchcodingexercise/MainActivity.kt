@@ -4,9 +4,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,6 +42,9 @@ class MainActivity : ComponentActivity() {
 
 }
 
+/*
+MainView() represents the entire view
+ */
 @Composable
 fun MainView() {
 
@@ -51,26 +58,54 @@ fun MainView() {
         CoroutineScope(Dispatchers.IO).launch {
             val rawAmazonDataList = retrieveAmazonJsonData("https://fetch-hiring.s3.amazonaws.com/hiring.json") //Get the amazon data from a custom json retrieval function
 
-            amazonData = sortList(rawAmazonDataList)
-
+            amazonData = sortList(rawAmazonDataList) //Sort the rawAmazonDataList and assign it to the amazonData for the view
         }
     }
 
     AmazonListView(amazonData) //Assign the list of AmazonData into a view
 }
 
+/*
+AmazonListView represents the entire list
+ */
 @Composable
 fun AmazonListView(amazonDataList: List<AmazonData>?) {
     amazonDataList?.let { dataList ->
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(dataList) { unit ->
-                Text(text = "listId: ${unit.listId}, name: ${unit.name}, id: ${unit.id}")
+        Column(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("listId", modifier = Modifier.weight(1f), style = MaterialTheme.typography.headlineLarge) //listId header
+                Text("name", modifier = Modifier.weight(2f), style = MaterialTheme.typography.headlineLarge) //name header
+                Text("id", modifier = Modifier.weight(1f), style = MaterialTheme.typography.headlineLarge) //id header
+            }
+
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(dataList) { unit -> //For each item in the List
+                    AmazonItem(unit) //Add a row for the item
+                }
             }
         }
     } ?: run {
         Text(text = "An error has occurred")
     }
 }
+
+/*
+AmazonItem() creates one row for each AmazonData
+ */
+@Composable
+fun AmazonItem(data: AmazonData) {
+    Row(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text("${data.listId}", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge) //listId item text
+        Text("${data.name}", modifier = Modifier.weight(2f), style = MaterialTheme.typography.bodyLarge) //name item text
+        Text("${data.id}", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge) //id item text
+    }
+}
+
+
 
 fun retrieveAmazonJsonData(link: String) : List<AmazonData>? {
     val client = OkHttpClient() //Create client for HTTP requests
@@ -87,13 +122,15 @@ fun retrieveAmazonJsonData(link: String) : List<AmazonData>? {
     }
 }
 
+//sortList() will first remove all AmazonData entries that have null or blank names, then sort by listId, then sort by name
 fun sortList(rawData: List<AmazonData>?) : List<AmazonData>? {
-    //Remove all AmazonData that are null or blank
+    //Remove all AmazonData names that are null or blank
     //Then sort by listId, then sort by name.
     //Name must have the prefix "Item " removed before int comparison
     return rawData?.filter { !it.name.isNullOrBlank() }?.sortedWith(compareBy({ it.listId }, { removeItemPrefix(it.name) }))
 }
 
+//removeItemPrefix() will remove the prefix "Item " so that the name's numbers can be compared as ints instead of strings
 fun removeItemPrefix(name: String?) : Int {
     //Since all names we want to sort begin with "Item ", but need to be compared numerically, these names should be converted to ints for comparison
     //If the names aren't converted to ints, but instead compared as strings, then "Item 280" will come before "Item 29", which isn't correct.
@@ -102,7 +139,7 @@ fun removeItemPrefix(name: String?) : Int {
 
 
 
-//Function to group and sort by listId. Does not sort by name.
+//groupByListId will group and sort by listId. Does not sort by name.
 //Not currently used anymore, but is being kept for reference.
 fun groupByListId(rawData: List<AmazonData>?) : List<AmazonData>? {
 
