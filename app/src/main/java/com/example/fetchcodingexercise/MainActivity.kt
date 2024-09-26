@@ -49,7 +49,10 @@ fun MainView() {
     LaunchedEffect(Unit) {
         //Fetch data using the IO thread, to avoid blocking the main thread
         CoroutineScope(Dispatchers.IO).launch {
-            amazonData = retrieveAmazonJsonData("https://fetch-hiring.s3.amazonaws.com/hiring.json") //Get the amazon data from a custom json retrieval function
+            val rawAmazonDataList = retrieveAmazonJsonData("https://fetch-hiring.s3.amazonaws.com/hiring.json") //Get the amazon data from a custom json retrieval function
+
+            amazonData = groupByListId(rawAmazonDataList)
+
         }
     }
 
@@ -82,4 +85,19 @@ fun retrieveAmazonJsonData(link: String) : List<AmazonData>? {
         println("EXCEPTION $e")
         return null //If there is an error with the call to the URL, or deserialization, return null
     }
+}
+
+fun groupByListId(rawData: List<AmazonData>?) : List<AmazonData>? {
+
+    return rawData?.groupBy{ it.listId }?.toList()?.sortedBy { (key, _) -> key }?.flatMap { (_, list) -> list }
+    /*
+    .groupBy{ it.listId }? will group the raw data by listId, and place into a map of format: Map<Int, List<AmazonData>>?
+     The map's Int represents the group key, and the List<AmazonData> represents the data within the group.
+
+     toList()? will group the data into a list of pairs to sort, with this format: List< Pair<Int, List<AmazonData>>>?
+
+     .sortedBy { (key, _) -> key }? will sort the pairs into a list, using the group number as a key, with format:  List<Pair<Int, List<AmazonData>>>?
+
+     .flatMap { (_, list) -> list } will remove the group key, and just leave the list of Amazon data: List<AmazonData>
+     */
 }
