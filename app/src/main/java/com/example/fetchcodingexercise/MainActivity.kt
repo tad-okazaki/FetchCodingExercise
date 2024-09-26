@@ -51,7 +51,7 @@ fun MainView() {
         CoroutineScope(Dispatchers.IO).launch {
             val rawAmazonDataList = retrieveAmazonJsonData("https://fetch-hiring.s3.amazonaws.com/hiring.json") //Get the amazon data from a custom json retrieval function
 
-            amazonData = groupByListId(rawAmazonDataList)
+            amazonData = sortList(rawAmazonDataList)
 
         }
     }
@@ -87,6 +87,22 @@ fun retrieveAmazonJsonData(link: String) : List<AmazonData>? {
     }
 }
 
+fun sortList(rawData: List<AmazonData>?) : List<AmazonData>? {
+    //Sort by listId first, then sort by name.
+    //Name must have the prefix "Item " removed before int comparison
+    return rawData?.sortedWith(compareBy({ it.listId }, { removeItemPrefix(it.name) }))
+}
+
+fun removeItemPrefix(name: String?) : Int {
+    //Since all names we want to sort begin with "Item ", but need to be compared numerically, these names should be converted to ints for comparison
+    //If the names aren't converted to ints, but instead compared as strings, then "Item 280" will come before "Item 29", which isn't correct.
+    return name?.removePrefix("Item ")?.toIntOrNull() ?: 0
+}
+
+
+
+//Function to group and sort by listId. Does not sort by name.
+//Not currently used anymore, but is being kept for reference.
 fun groupByListId(rawData: List<AmazonData>?) : List<AmazonData>? {
 
     return rawData?.groupBy{ it.listId }?.toList()?.sortedBy { (key, _) -> key }?.flatMap { (_, list) -> list }
